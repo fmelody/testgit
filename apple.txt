@@ -1,0 +1,88 @@
+// pingguo.cpp: 定义控制台应用程序的入口点。
+//
+
+#include "stdafx.h"
+#include<iostream>
+#include <opencv2\opencv.hpp>  //opencv的头文件
+
+using namespace std;
+using namespace cv;             //包括cv的命名空间
+
+								//int thresholds = 50;
+Mat image, srcimage;
+int min_h = 0;
+int max_h = 30;
+int min_s = 20;
+int max_s = 60;
+int min_v = 20;
+int max_v = 60;
+
+void rectangle(InputOutputArray img, Point pt1, Point pt2,
+	const Scalar& color, int thickness = 1,
+	int lineType = LINE_8, int shift = 0);
+
+
+
+int main()
+{
+	VideoCapture capture(1);
+	Mat edges;
+	cvNamedWindow("real time", 1);
+
+	while (1)
+	{
+		Mat frame;
+		Mat picture;
+		capture >> frame;
+
+		if (!frame.data)
+		{
+			return 0;
+		}
+		namedWindow("1", 1);
+		cvtColor(frame, picture, COLOR_BGR2HSV);//将图像转换为hsv
+		imshow("原图", frame);
+		imshow("灰图", picture);
+		Mat finally;
+		cv::createTrackbar("min_thre", "1", &min_h, 360);
+		cv::createTrackbar("max_thre", "1", &max_h, 360);
+		cv::createTrackbar("min_s", "1", &min_s, 255);
+		cv::createTrackbar("max_s", "1", &max_s, 255);
+		cv::createTrackbar("min_v", "1", &min_v, 255);
+		cv::createTrackbar("max_v", "1", &max_v, 255);
+		cv::inRange(picture, cv::Scalar(min_h,min_s,min_v), cv::Scalar(max_h,max_s,max_v), finally);//二值化
+		
+
+		frame = frame.clone();
+		cv::imshow("input", finally);
+		//定义变量
+		vector<vector<Point>>contours;
+		vector<Vec4i>hierarchy;
+
+		finally = finally > 100;
+		findContours(finally, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE);
+
+		//绘制轮廓图
+		Mat dstImage;
+		dstImage = Mat::zeros(finally.size(), CV_8UC3);
+		for (int i = 0; i < hierarchy.size(); i++)
+		{
+			Scalar color = Scalar(rand() % 255, rand() % 255, rand() % 255);
+			drawContours(dstImage, contours, i, color, CV_FILLED, 8, hierarchy);
+		}
+		imshow("轮廓图", dstImage);
+		//! type of line
+		enum LineTypes {
+			FILLED = -1,
+			LINE_4 = 4, //!< 4-connected line
+			LINE_8 = 8, //!< 8-connected line
+			LINE_AA = 16 //!< antialiased line
+		};
+
+			void rectangle(CV_IN_OUT Mat& img, Rect rec,
+				const Scalar& color, int thickness = 1,
+				int lineType = LINE_8, int shift = 0);
+		waitKey(1);
+	}
+	return 0;
+}
